@@ -1,0 +1,933 @@
+{
+  "name": "Nimbus PayDesk",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "dataPropertyAttachmentsPrefixName": "attachment_",
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -2912,
+        -576
+      ],
+      "id": "cbb6378a-1344-4602-adfa-a535baa375aa",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "R7LDZ2C7ayWqqOaA",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_0",
+        "options": {
+          "keepSource": "both"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2688,
+        -576
+      ],
+      "id": "b153aafe-2ebb-4be3-8718-39ca43e93ad5",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1440,
+        -752
+      ],
+      "id": "25c9321a-9680-449f-b5a8-fa61392933d5",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -320,
+        -704
+      ],
+      "id": "1a65a19d-eac9-4a76-898b-aa4e65047b30",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "36b12b6c-90b6-407c-bdab-71d5f9900abc",
+              "name": "raw_text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "19ea6c9a-d849-4e54-abe7-aad8caf34707",
+              "name": "vendor",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "ee06abed-ea89-4e7f-b420-070cb145be05",
+              "name": "gstin",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "88a3a1b4-b897-4640-8c9f-ff1f9711d41c",
+              "name": "po_number",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "053ed5fc-6348-4686-8299-0e66d0fa4f16",
+              "name": "invoice_date",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "fcc81fd0-5c94-4953-8be0-fb096651dbe4",
+              "name": "amount_inr",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "6c93fc23-d65a-4d61-822c-67d8930cfba0",
+              "name": "confidence",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "45037162-1323-4d26-a374-bba0939dec9d",
+              "name": "status",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "3058d24c-c7ff-40c7-8684-56f427587c04",
+              "name": "reasons",
+              "value": "={{ [] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "stripBinary": false
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2464,
+        -576
+      ],
+      "id": "12b879ee-14b0-4418-a9fd-708aeedb3751",
+      "name": "1. Intake - Build Ticket"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('2. Extractor - Parse Invoice Fields').item.json.output.confidence }}",
+                    "rightValue": 0.8,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    },
+                    "id": "f754e926-4859-4449-8218-8e3ba715968b"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "47c3a90e-2ea3-499b-b48d-157709281ee0",
+                    "leftValue": "={{ (Number.isFinite(Number($('2. Extractor - Parse Invoice Fields').item.json.output.amount_inr)) && Number($('2. Extractor - Parse Invoice Fields').item.json.output.amount_inr) > 0) ? Number($('2. Extractor - Parse Invoice Fields').item.json.output.amount_inr) : Infinity }}",
+                    "rightValue": 50000,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "98c9e02e-5830-43c8-8b9b-bb4a1e188055",
+                    "leftValue": "={{ (($('2. Extractor - Parse Invoice Fields').item.json.output.confidence >= 0.8) && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test((($('2. Extractor - Parse Invoice Fields').item.json.output.gstin)||'').toString().trim().toUpperCase()) && ($json.dup_count === 0)) ? 1 : 0 }}",
+                    "rightValue": 0.8,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c9707e20-4e03-4382-89f2-28eb9a76244a",
+                    "leftValue": "={{ /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test((($('2. Extractor - Parse Invoice Fields').item.json.output.gstin)||'').toString().trim().toUpperCase()) ? 'valid' : 'invalid' }}",
+                    "rightValue": "=invalid",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d16fc128-8067-45ea-876a-d4eceb641b1f",
+                    "leftValue": "={{ $json.dup_count }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1888,
+        -464
+      ],
+      "id": "3f78c71d-8ca3-42e5-b1f1-3f64f8bd8966",
+      "name": "3. Policy Checker - Route by Amount/Confidence"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.raw_text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "vendor",
+              "description": "The name of the company that issued the invoice (e.g., Kaveri Packaging Pvt Ltd).",
+              "required": true
+            },
+            {
+              "name": "gstin",
+              "description": "This will be the GSTIN number, verify from the database that the GSTIN number is registered and then only fill this. If no database found for valid GSTIN , then just copy this only.",
+              "required": true
+            },
+            {
+              "name": "ticket_id",
+              "description": "The Invoice Number (e.g., INV-1042).",
+              "required": true
+            },
+            {
+              "name": "po_number",
+              "description": "The Purchase Order number (e.g., PO-7781). Return \"Not Found\" if missing.",
+              "required": true
+            },
+            {
+              "name": "invoice_date",
+              "description": "The date the invoice was billed.",
+              "required": true
+            },
+            {
+              "name": "amount_inr",
+              "type": "number",
+              "description": "The final Total Amount Due. Extract only the numbers and decimals, do not include commas or currency symbols (e.g., 18600).",
+              "required": true
+            },
+            {
+              "name": "confidence",
+              "type": "number",
+              "description": "A score from 0.0 to 1.0 indicating how confident you are that all data was found and extracted correctly (e.g., 0.95).",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert extraction algorithm.\nOnly extract relevant information from the text.\nIf you do not know the value of an attribute asked to extract, you may omit the attribute's value.\n\nYou are a strict, literal financial data auditor. Your primary task is to extract invoice data matching specific formatting requirements and calculate a highly critical `confidence_score` (a float between 0.00 and 1.00).\n\n### EXPECTED FIELDS & SAMPLE DATA\nExtract the following exact fields. If a field is missing, output null, but remember to apply the corresponding penalty to the confidence score.\n\n* `vendor`: The name of the company issuing the document. \n  -> Sample Data: \"Acme Packaging Pvt. Ltd.\", \"Global Tech Solutions\"\n* `ticket_id`: The unique invoice or document identifier. \n  -> Sample Data: \"INV-1044\", \"TXN-9942-B\", \"004599-2\"\n* `amount_inr`: The final total payable amount as a pure number. You MUST strip all commas and currency symbols (₹, INR, Rs). \n  -> Sample Data: 45600.00, 1500.50\n* `po_number`: The Purchase Order reference. \n  -> Sample Data: \"PO-7781\", \"7781-ALPHA\", \"PO# 12345\"\n* `gstin`: The 15-character alphanumeric Indian Tax Identification Number. \n  -> Sample Data: \"29AAACA1234A1Z5\", \"07AAGFF2194N1Z1\"\n* `invoice_date`: The date the document was issued. \n  -> Sample Data: \"August 31, 2026\", \"2026-08-31\", \"31/08/2026\"\n\n### CONFIDENCE SCORE PENALTY RUBRIC\nYou MUST calculate the confidence score mechanically. Start with a baseline score of 1.00 and subtract penalties for every violation found in the document.\n\n1. Document Type & Structure\n- Deduct 0.30 if the document is NOT explicitly titled \"Invoice\", \"Tax Invoice\", or \"Receipt\" (e.g., penalize \"Commercial Demand\", \"Statement\", or no title).\n- Deduct 0.15 if the document contains messy formatting, warning watermarks, or unstructured body text mimicking a letter.\n\n2. Missing Data\n- Deduct 0.40 for EACH missing critical field (Vendor Name, Amount, Ticket ID).\n- Deduct 0.20 for EACH missing secondary field (PO Number, GSTIN, Date).\n\n3. Ambiguous Labels (Non-Standard Terminology)\n- Deduct 0.20 if the Ticket ID is labeled vaguely (e.g., \"Transaction Identifier\", \"Reference\", \"Doc No\").\n- Deduct 0.20 if the PO Number is labeled vaguely (e.g., \"Client Requisition\", \"Order Tag\").\n- Deduct 0.20 if the GSTIN or Tax ID is missing standard formatting, contains spaces, or is labeled ambiguously.\n\n4. Value Extraction Complexity\n- Deduct 0.30 if the Total Amount is embedded within a paragraph of text rather than clearly stated in a summary table or standalone line item.\n- Deduct 0.10 if the Total Amount lacks a clear currency indicator (INR, ₹, Rs) anywhere nearby.\n\nCalculation Rules:\n- Apply ALL applicable penalties cumulatively. \n- If the final calculated score drops below 0.00, output 0.00.\n- Never guess. If you have to infer a value purely through context clues, apply the corresponding deduction."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -2240,
+        -432
+      ],
+      "id": "d14c1855-91f8-421f-96c3-52e180ecf564",
+      "name": "2. Extractor - Parse Invoice Fields"
+    },
+    {
+      "parameters": {
+        "sendTo": "shubham.kumar11.meet@gmail.com",
+        "subject": "Human Escalation due to low confidence score or high amount.",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;\">\n    <h2 style=\"color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;\">Action Required: Invoice Approval</h2>\n    <p>A new invoice requires manual review. This escalation was triggered because either the AI confidence score is below 0.8, or the amount exceeds ₹50,000.</p>\n    \n    <table style=\"width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f9f9f9; border: 1px solid #ddd;\">\n        <tr>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold; width: 35%;\">Vendor</td>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd;\">{{ $('2. Extractor - Parse Invoice Fields').item.json.output.vendor }}</td>\n        </tr>\n        <tr>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;\">Ticket ID</td>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd;\">{{ $('2. Extractor - Parse Invoice Fields').item.json.output.ticket_id }}</td>\n        </tr>\n        <tr>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;\">Amount (INR)</td>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd; color: #e74c3c; font-weight: bold;\">₹ {{ $('2. Extractor - Parse Invoice Fields').item.json.output.amount_inr }}</td>\n        </tr>\n        <tr>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;\">AI Confidence</td>\n            <td style=\"padding: 10px; border-bottom: 1px solid #ddd;\">{{ $('2. Extractor - Parse Invoice Fields').item.json.output.confidence }} / 1.0</td>\n        </tr>\n        <tr>\n            <td style=\"padding: 10px; font-weight: bold;\">GSTIN</td>\n            <td style=\"padding: 10px;\">{{ $('2. Extractor - Parse Invoice Fields').item.json.output.gstin }}</td>\n        </tr>\n    </table>\n\n    <div style=\"text-align: center; margin-top: 30px; margin-bottom: 20px;\">\n        <a href=\"{{ $execution.resumeUrl }}&decision=yes\" style=\"background-color: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; margin-right: 15px;\">✅ APPROVE & PAY</a>\n        <a href=\"{{ $execution.resumeUrl }}&decision=no\" style=\"background-color: #c0392b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;\">❌ REJECT</a>\n    </div>\n</div>",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "attachment_0"
+              }
+            ]
+          },
+          "senderName": "Shubham"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1216,
+        -752
+      ],
+      "id": "42f5593b-a02f-4738-ad5f-17a3b4d3ff60",
+      "name": "4. Exception Router - Email Approval Request",
+      "webhookId": "accc7b9b-fdc5-4c70-b47c-9fdf0bb3f3df",
+      "retryOnFail": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "R7LDZ2C7ayWqqOaA",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3f24ce2a-efbf-49ec-b8fb-3a8bc1a859b7",
+              "leftValue": "={{ ($json.query.decision || '').toString().trim().toLowerCase() }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -768,
+        -752
+      ],
+      "id": "ba3b1122-c1e7-429a-8fbd-54fbdd9d5bc8",
+      "name": "Human Gate - Approved?"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "limitWaitTime": true,
+        "resumeAmount": 2,
+        "resumeUnit": "days",
+        "options": {
+          "ignoreBots": true
+        }
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -992,
+        -752
+      ],
+      "id": "5d11fd27-7e49-46bd-adc0-bcebff736d94",
+      "name": "Wait for Human Stamp",
+      "webhookId": "360169a9-26b6-479f-a1ab-d434a4c1be9f"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5b0d27b8-bd66-4dc4-a645-1a8f87284334",
+              "name": "status",
+              "value": "={{ $json.query && $json.query.decision !== undefined ? 'rejected' : 'timed_out' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -544,
+        -752
+      ],
+      "id": "5f5ca902-37a9-4b23-93b6-1e95679f13e7",
+      "name": "Set Status - Rejected"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "838590dd-4a7e-49e2-ac47-178f38812254",
+              "name": "status",
+              "value": "awaiting_human_approval",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1664,
+        -320
+      ],
+      "id": "d49f6cfe-dd63-40e6-89f3-52eac8083de5",
+      "name": "Set Status - Awaiting Approval"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "42dc1d28-bd88-4b14-affe-34491c10ce05",
+              "name": "status",
+              "value": "ready_to_pay",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -544,
+        -560
+      ],
+      "id": "176905e7-0ab7-464a-ac6d-b44918221935",
+      "name": "Set Status - Ready to Pay"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": {
+          "__rl": true,
+          "value": "tickets",
+          "mode": "list",
+          "cachedResultName": "tickets"
+        },
+        "dataMode": "defineBelow",
+        "columnToMatchOn": "ticket_id",
+        "valueToMatchOn": "={{ $json.output.ticket_id }}",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "payment_status",
+              "value": "={{ $json.status }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-sqlite3.sqliteNode",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -704
+      ],
+      "id": "c6cfacad-cef2-48d0-a44f-1c42344990fd",
+      "name": "Update Ticket Log - Rejected Path",
+      "retryOnFail": true,
+      "credentials": {
+        "sqliteCredentialsApi": {
+          "id": "cNcQcujkvVhk3mGq",
+          "name": "SQLite Database account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": {
+          "__rl": true,
+          "value": "tickets",
+          "mode": "list",
+          "cachedResultName": "tickets"
+        },
+        "dataMode": "defineBelow",
+        "columnToMatchOn": "ticket_id",
+        "valueToMatchOn": "={{ $json.output.ticket_id }}",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "payment_status",
+              "value": "={{ $json.status }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-sqlite3.sqliteNode",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        -480
+      ],
+      "id": "ea850335-6caf-49e6-944d-14d316d53982",
+      "name": "Update Ticket Log - Ready to Pay",
+      "retryOnFail": true,
+      "credentials": {
+        "sqliteCredentialsApi": {
+          "id": "cNcQcujkvVhk3mGq",
+          "name": "SQLite Database account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Nimbus PayDesk — 5-Agent Map\n\n**1. Intake** → builds the ticket from the AP email\n**2. Extractor** → PDF to structured fields + confidence\n**3. Policy Checker** → routes by amount/confidence (GST/PO/duplicate via RAG = TODO)\n**4. Exception Router** → emails a human with Approve/Reject links\n**5. Reporter** → weekly summary from the tickets log (not yet built)\n\nHuman Gate → Update Ticket Log (SQLite `tickets` table)"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1408,
+        -144
+      ],
+      "typeVersion": 1,
+      "id": "477401a4-c045-464f-9845-adfe5127e226",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "allowExpressions": true,
+        "queryExpression": "=SELECT COUNT(*) AS dup_count FROM tickets WHERE vendor = '{{ ($('2. Extractor - Parse Invoice Fields').item.json.output.vendor || \"\").toString().replace(/'/g, \"''\") }}' AND invoice_date = '{{ ($('2. Extractor - Parse Invoice Fields').item.json.output.invoice_date || \"\").toString().replace(/'/g, \"''\") }}' AND amount_inr = {{ Number.isFinite(Number($('2. Extractor - Parse Invoice Fields').item.json.output.amount_inr)) ? Number($('2. Extractor - Parse Invoice Fields').item.json.output.amount_inr) : 0 }} AND payment_status != 'rejected' AND ticket_id != '{{ ($('2. Extractor - Parse Invoice Fields').item.json.output.ticket_id || \"\").toString().replace(/'/g, \"''\") }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-sqlite3.sqliteNode",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        -80
+      ],
+      "id": "9fab2278-0857-4916-9bc8-39e6e49f5f2c",
+      "name": "5. Duplicate Check - Query Tickets",
+      "retryOnFail": true,
+      "credentials": {
+        "sqliteCredentialsApi": {
+          "id": "cNcQcujkvVhk3mGq",
+          "name": "SQLite Database account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "table": {
+          "__rl": true,
+          "value": "tickets",
+          "mode": "list",
+          "cachedResultName": "tickets"
+        },
+        "dataMode": "defineBelow",
+        "columnToMatchOn": "ticket_id",
+        "valueToMatchOn": "={{ $json.output.ticket_id }}",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "vendor",
+              "value": "={{ $json.output.vendor }}"
+            },
+            {
+              "column": "gstin",
+              "value": "={{ $json.output.gstin }}"
+            },
+            {
+              "column": "po_number",
+              "value": "={{ $json.output.po_number }}"
+            },
+            {
+              "column": "amount_inr",
+              "value": "={{ $json.output.amount_inr }}"
+            },
+            {
+              "column": "invoice_date",
+              "value": "={{ $json.output.invoice_date }}"
+            },
+            {
+              "column": "payment_status",
+              "value": "processing"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-sqlite3.sqliteNode",
+      "typeVersion": 2,
+      "position": [
+        -1936,
+        -176
+      ],
+      "id": "66fef9c7-4b91-455b-a7c8-e83f2478d339",
+      "name": "6. Ticket Log - Insert New Ticket",
+      "retryOnFail": true,
+      "credentials": {
+        "sqliteCredentialsApi": {
+          "id": "cNcQcujkvVhk3mGq",
+          "name": "SQLite Database account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -2320,
+        -224
+      ],
+      "id": "b806d26b-c05a-4770-aeaa-dd5c73a56608",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "G7fSNx8eahodBzcE",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "1. Intake - Build Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "4. Exception Router - Email Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Update Ticket Log - Rejected Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Intake - Build Ticket": {
+      "main": [
+        [
+          {
+            "node": "2. Extractor - Parse Invoice Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "3. Policy Checker - Route by Amount/Confidence": {
+      "main": [
+        [
+          {
+            "node": "Set Status - Awaiting Approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Status - Awaiting Approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Status - Ready to Pay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "4. Exception Router - Email Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "4. Exception Router - Email Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Extractor - Parse Invoice Fields": {
+      "main": [
+        [
+          {
+            "node": "6. Ticket Log - Insert New Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Exception Router - Email Approval Request": {
+      "main": [
+        [
+          {
+            "node": "Wait for Human Stamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Gate - Approved?": {
+      "main": [
+        [
+          {
+            "node": "Set Status - Ready to Pay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Status - Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Human Stamp": {
+      "main": [
+        [
+          {
+            "node": "Human Gate - Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status - Rejected": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status - Awaiting Approval": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Set Status - Ready to Pay": {
+      "main": [
+        [
+          {
+            "node": "Update Ticket Log - Ready to Pay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Duplicate Check - Query Tickets": {
+      "main": [
+        [
+          {
+            "node": "3. Policy Checker - Route by Amount/Confidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Ticket Log - Insert New Ticket": {
+      "main": [
+        [
+          {
+            "node": "5. Duplicate Check - Query Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "2. Extractor - Parse Invoice Fields",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "2nDSSAaAmMt7qaaV",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "7ce47487-ec5b-41f9-9268-bddeed72cf94",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "88e8f32ea8533c80ed115f9b21ee1d528dd270f4c6bcbd23bc1ffcdb168196f7"
+  },
+  "nodeGroups": [],
+  "id": "LJovXqlLzsQAGVA1",
+  "tags": []
+}

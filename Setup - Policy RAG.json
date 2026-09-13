@@ -1,0 +1,196 @@
+{
+  "name": "Setup - Policy RAG",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -48
+      ],
+      "id": "a45f106a-84af-4a0c-88b1-77707651af0c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6bd0d74c-705c-4854-84a6-a451804b62f2",
+              "name": "policy_textpolicy_text",
+              "value": "Accounts Payable Policy Rules: Any invoice amount $\\ge 50000$ requires a mandatory stamp from the AP lead. If the vendor GSTIN is a mismatch or unknown, it requires a stamp from the Tax desk. If the extraction confidence is $< 0.80$, the invoice requires a type-check by an AP clerk. If the system detects a duplicate invoice ID, it requires a stamp from the AP lead. A missing PO is considered an exception. If the PO matches, the GST is valid, and the amount is under the limit, there is no gate and the invoice proceeds on the speed path. ",
+              "type": "string"
+            },
+            {
+              "id": "80df6795-aef3-4bfb-a4c1-de483490d0de",
+              "name": "policy_textRULE: GST Validation. Every vendor invoice must carry a valid, active GSTIN matching the standard 15-character format (2-digit state code + 10-character PAN + entity code + Z + checksum). Before an invoice can be marked ready to pay, the extracted GSTIN must be checked against the GST lookup service and found ACTIVE. If the GSTIN is missing, malformed, or returns INACTIVE or CANCELLED, the invoice fails policy with reason gst_mismatch. Gate: mandatory stamp by the Tax Desk. If ignored, the risk is a GST notice from the department. There is no rupee threshold for this rule, it applies even to an 800 rupee invoice.\n\nRULE: Purchase Order Match. The po_number extracted from the invoice must exist in the ERP (Tally) system and be linked to the same vendor. If the PO number is missing, blank, or not found in ERP, the invoice fails with reason po_missing. This is always an exception, never auto-approved, since an invoice without a valid PO cannot be confirmed as an authorized purchase.\n\nRULE: Amount Threshold. If amount_inr is greater than or equal to 50000 rupees, the invoice must always be stamped by a human regardless of whether GST and PO checks pass, with reason amount_gate. Owner: AP Lead. SLA: 4 business hours. If this gate is ignored, the risk is a large wrong payment going out. Below 50000 rupees, this specific gate does not fire on its own, though other gates may still apply.\n\nRULE: Duplicate Invoice Check. Before approval, check whether the ticket_id, or the combination of vendor plus invoice_date plus amount_inr, already exists in the tickets table with a payment_status other than rejected. A match means this invoice has likely already been processed. Fail with reason duplicate_invoice_id. Gate: mandatory stamp. Owner: AP Lead. If ignored, the vendor gets paid twice.\n\nRULE: Extraction Confidence. If the Extractor confidence score is below 0.80, do not trust the extracted fields for an automatic policy decision. Route to a human with reason low_confidence and ask them to type-check the GSTIN, PO number, and amount directly from page 1 of the source PDF. Owner: AP Clerk. Never guess or auto-correct a low-confidence field, an incorrect guess is how the wrong vendor gets paid.\n\nRULE: Clean Pass, No Gate. An invoice reaches ready_to_pay automatically, with no human gate, only when ALL of the following are true at once: GSTIN is valid and active, PO number matches ERP, amount_inr is below 50000, confidence is 0.80 or above, and the invoice is not a duplicate. This is the only condition under which the system may skip a human stop.\n\nROUTING OWNERSHIP: gst_mismatch routes to tax_desk. amount_gate or duplicate_invoice_id routes to ap_lead. low_confidence routes to ap_clerk, which is the default owner when no other reason applies. If more than one reason fires on the same invoice, gst_mismatch takes routing priority to tax desk, then amount_gate or duplicate_invoice_id to ap_lead, then low_confidence to ap_clerk.\n\nESCALATION AND FALLBACK: If a gated invoice sits without a human response past its SLA, 4 business hours for ap_lead and tax_desk stamps, 8 business hours for ap_clerk type-checks, escalate automatically to the Finance Head. The weekly Reporter summary must flag any invoice still open past its SLA as at risk.\n\nSCOPE BOUNDARY: This policy governs the AP invoice desk only, intake of emailed PDF invoices, GST validation, PO matching, exception routing, and a weekly summary. Actually releasing payment over NEFT or bank transfer is explicitly out of scope for any agent, a named human in Finance always clicks pay. No agent in this system may write to the bank or NEFT system under any circumstance.\n\nDATA HANDLING: Agents may only pass ticket_id and the need-to-know invoice fields, vendor name, GSTIN, PO number, amount, confidence, status, reasons, between steps. Full vendor PAN, employee salary data, and any unpublished customer lists must never appear in a prompt, log line, or Slack or email message generated by this system.",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -368,
+        -48
+      ],
+      "id": "d7be9fcb-2a68-474e-a415-780da843534f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "chromaCollection": {
+          "__rl": true,
+          "value": "ap_policies",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreChromaDB",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        -48
+      ],
+      "id": "5e3fe239-7c8a-4e61-91b7-f1c5d2c4053a",
+      "name": "Chroma Vector Store",
+      "credentials": {
+        "chromaSelfHostedApi": {
+          "id": "43boEtyUX5PcnLnU",
+          "name": "ChromaDB Self-Hosted account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "policy_text",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": []
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        160
+      ],
+      "id": "6c120172-3e34-4c32-9907-b3f0d20b5e5d",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 800,
+        "chunkOverlap": 40,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        80,
+        368
+      ],
+      "id": "654e7062-8cef-4af1-b18e-d80cc08a64a2",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "model": "snowflake-arctic-embed:335m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        160
+      ],
+      "id": "715f7e87-6060-494c-b6b0-7fa0daef1ab1",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "aWFOVtkSaTqF62ZL",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Chroma Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Chroma Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Chroma Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "14992b19-9827-4e0e-b178-b16122a9bc82",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "88e8f32ea8533c80ed115f9b21ee1d528dd270f4c6bcbd23bc1ffcdb168196f7"
+  },
+  "nodeGroups": [],
+  "id": "QX0xl9XqxWPu1H4i",
+  "tags": []
+}

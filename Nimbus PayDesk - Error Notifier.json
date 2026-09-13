@@ -1,0 +1,67 @@
+{
+  "name": "Nimbus PayDesk - Error Notifier",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7ebabf5d-5dc0-407e-b375-db19b01910de",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "sendTo": "shubham.cricket11@gmail.com",
+        "subject": "⚠️ Nimbus PayDesk workflow failed: {{ $json.workflow.name }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;\">  <h2 style=\"color: #c0392b;\">Nimbus PayDesk Workflow Error</h2>  <p>The workflow <b>{{ $json.workflow.name }}</b> failed during execution.</p>  <table style=\"width: 100%; border-collapse: collapse; margin: 15px 0; background-color: #f9f9f9; border: 1px solid #ddd;\">    <tr><td style=\"padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold; width: 35%;\">Workflow</td><td style=\"padding: 8px; border-bottom: 1px solid #ddd;\">{{ $json.workflow.name }}</td></tr>    <tr><td style=\"padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;\">Execution ID</td><td style=\"padding: 8px; border-bottom: 1px solid #ddd;\">{{ $json.execution.id }}</td></tr>    <tr><td style=\"padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;\">Failed Node</td><td style=\"padding: 8px; border-bottom: 1px solid #ddd;\">{{ $json.execution.lastNodeExecuted }}</td></tr>    <tr><td style=\"padding: 8px; font-weight: bold;\">Error Message</td><td style=\"padding: 8px; color: #c0392b;\">{{ $json.execution.error.message }}</td></tr>  </table>  <p><a href=\"{{ $json.execution.url }}\">View execution details</a></p></div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        0
+      ],
+      "id": "9f442aec-ccec-494a-b065-e0678951ab9e",
+      "name": "Send a message",
+      "webhookId": "d61d23ea-4b1e-4a5e-a9d4-88705d3e6e2c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "R7LDZ2C7ayWqqOaA",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a69967e5-f6be-4fd0-8105-044403d08613",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "88e8f32ea8533c80ed115f9b21ee1d528dd270f4c6bcbd23bc1ffcdb168196f7"
+  },
+  "nodeGroups": [],
+  "id": "2nDSSAaAmMt7qaaV",
+  "tags": []
+}
